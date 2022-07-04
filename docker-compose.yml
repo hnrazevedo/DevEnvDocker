@@ -1,0 +1,68 @@
+version: "3.7"
+services:
+  db:
+    container_name: laravel_db
+    image: mariadb:10.8
+    volumes:
+      - ${MARIADB_DATA}:/var/lib/mysql
+    ports:
+      - "${MARIADB_PORT}:3306"
+    environment:
+      - MYSQL_DATABASE=${MARIADB_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_USER=${MARIADB_USER}
+      - MYSQL_PASSWORD=${MARIADB_PASSWORD}
+    networks:
+      - laravelserver
+    restart: unless-stopped
+
+  web:
+    container_name: laravel_web
+    image: nginx:1.23
+    volumes:
+      - ${NGINX_CONF_PATH}:/etc/nginx/conf.d
+      - ${APP_PATH}:/var/www/html:ro
+      - ${NGINX_LOG_PATH}:/var/log/nginx
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_HTTPS_PORT}:443"
+    links:
+      - app
+    networks:
+      - laravelserver
+
+  app:
+    container_name: laravel_app
+    build:
+      context: ${PHP_DOCKERFILE_PATH}
+      args:
+        - INSTALL_GD=${PHP_FPM_INSTALL_GD}
+        - INSTALL_COMPRESSION=${PHP_FPM_INSTALL_COMPRESSION}
+        - INSTALL_FTP=${PHP_FPM_INSTALL_FTP}
+        - INSTALL_MBSTRING=${PHP_FPM_INSTALL_MBSTRING}
+        - INSTALL_MCRYPT=${PHP_FPM_INSTALL_MCRYPT}
+        - INSTALL_PDO_MYSQL=${PHP_FPM_INSTALL_PDO_MYSQL}
+        - INSTALL_PDO_POSTGRESQL=${PHP_FPM_INSTALL_PDO_POSTGRESQL}
+        - INSTALL_MYSQLI=${PHP_FPM_INSTALL_MYSQLI}
+        - INSTALL_BCMATH=${PHP_FPM_INSTALL_BCMATH}
+        - INSTALL_OPCACHE=${PHP_FPM_INSTALL_OPCACHE}
+        - INSTALL_INTL=${PHP_FPM_INSTALL_INTL}
+        - INSTALL_XDEBUG=${PHP_FPM_INSTALL_XDEBUG}
+        - INSTALL_TOKENIZER=${PHP_FPM_INSTALL_TOKENIZER}
+        - INSTALL_JSON_XML=${PHP_FPM_INSTALL_JSON_XML}
+        - INSTALL_CURL=${PHP_FPM_INSTALL_CURL}
+        - INSTALL_OPENSSL=${PHP_FPM_INSTALL_OPENSSL}
+        - INSTALL_COMPOSER=${PHP_FPM_INSTALL_COMPOSER}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www/html
+    image: travellist
+    volumes:
+      - ${APP_PATH}:/var/www/html
+      - ${PHP_DOCKERFILE_PATH}/php.ini:/usr/local/etc/php/conf.d/laravel.php.ini
+    networks:
+      - laravelserver    
+
+networks:
+  laravelserver:
+    driver: bridge
